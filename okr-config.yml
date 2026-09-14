@@ -1,0 +1,119 @@
+# okr-monthly configuration
+# Credentials are NOT stored here — export ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN instead.
+
+# Per-level OKR targets. The L1 and L3 templates differ in both weightage and
+# wording, so nothing here is shared or inferred.
+#   L1: [L1][TEMPLATE][Talenta Integration] OKR 2026 Engineering
+#   L3: [L3][TEMPLATE][Talenta Integration] OKR 2026 Engineering
+# L2 is deliberately absent — its template has not been read; add a block
+# rather than reusing L1/L3 numbers.
+levels:
+  L1:
+    review_time_target_days: 2       # row 11: "Total Time to review on Bitbucket PR <= 2 days"
+    review_stop_events: [approve, reject]   # L1 initiative: "to approve/reject PR"
+    # Row 12 counts a "PR reviewed" artifact more broadly than row 11 clocks a
+    # review: a comment is review work even though it doesn't stop the row-11
+    # latency clock. Kept as its own key so changing one KR can't move the other.
+    efficiency_review_events: [approve, reject, comment]
+    efficiency_target: 2.25          # row 12: "Total efficiency score per week >= 2.25"
+    copilot_target_pct: 50           # row 10: "50% PR Full + Partial"
+    mltc_target_days: 5              # row 18: "<= 5 days"
+  L3:
+    review_time_target_days: 1.5     # L3 row: "<= 1.5 days"
+    review_stop_events: [approve, reject, comment]  # L3 initiative adds "/comment"
+    efficiency_review_events: [approve, reject, comment]
+    efficiency_target: 3.5
+    copilot_target_pct: 50
+    mltc_target_days: 4
+
+jira:
+  site: https://jurnal.atlassian.net    # used for human-readable browse/ links
+  # Scoped Atlassian API tokens (the ~192-char kind) are rejected by the site
+  # URL and must go through the api.atlassian.com gateway, which is keyed by
+  # cloud id. Verified 2026-09-09. Leave blank to talk to the site directly.
+  cloud_id: a3bbc8c1-dff1-447e-8d87-2faba3380518
+  # JQL templates — {start} / {end} are replaced with the period dates (YYYY-MM-DD).
+  # Adjust these to your team's conventions (labels, project keys).
+  jql:
+    pic_epics: 'issuetype = Epic AND assignee = currentUser() AND statusCategory = Done AND updated >= "{start}" AND updated <= "{end}"'
+    tech_debt: 'assignee = currentUser() AND labels in (tech-debt, techdebt, tech_debt) AND updated >= "{start}" AND updated <= "{end}"'
+    production_bugs: 'project = TBB AND assignee = currentUser() AND created >= "{start}" AND created <= "{end}"'
+
+  # Oncall tickets for the efficiency KR (row 12, stream 4). Project TD.
+  # Verified 2026-09-09: oncall work hangs off the quarterly "[BAU] On Call Tickets"
+  # epic, and older ones carry an "[On-Call]" summary prefix. Add the new epic key
+  # each quarter. `status CHANGED TO ... DURING` is what buckets a ticket into a week.
+  # Placeholders: {project} {epics} {start} {end}  — {end} is EXCLUSIVE (the day
+  # after the last day of the week), because Jira reads a bare date as 00:00.
+  #
+  # Scoped by the board's OWN saved filter, so the collector always matches what
+  # the board shows -- verified 2026-09-11 against board 2556 "TD Oncall &
+  # Fast-Track" (kanban, project TD id 11974), whose filter 26473 is:
+  #   (project = TBB AND issuetype = "Fast Track" AND created >= "2026-06-01"
+  #    AND "Team" = "Talenta-TDA") OR parent = TD-9824
+  # Note that spans TWO projects -- the earlier hand-written `project = TD ...`
+  # JQL missed the TBB Fast Track half and over-counted 3 TD tickets that only
+  # matched on an "[On-Call]" summary and were never on the board.
+  #
+  # `filter = {filter}` runs on the platform search API, so no Jira Software
+  # board scope is needed. If someone edits the board's filter, this follows it.
+  # board_id is kept for the human link only; nothing queries it.
+  oncall:
+    project: TD
+    board_id: 2556       # https://jurnal.atlassian.net/jira/software/c/projects/TD/boards/2556
+    filter_id: 26473     # the board's saved filter -- from board config, do not hand-edit
+    epics:
+      - TD-9824      # 26Q3 - [BAU] On Call Tickets (already inside filter 26473)
+    jql: 'filter = {filter} AND status CHANGED TO "Done" DURING ("{start}", "{end}")'
+
+confluence:
+  site: https://jurnal.atlassian.net/wiki
+  # Docs stream for the efficiency KR. {start}/{end} are the period bounds;
+  # per-week attribution comes from each page's version history, not from this
+  # query (CQL can only filter on a page's latest edit).
+  docs_cql: 'type = page AND contributor = currentUser() AND lastmodified >= "{start}" AND lastmodified <= "{end}"'
+  cql: 'type = page AND contributor = currentUser() AND lastmodified >= "{start}" AND lastmodified <= "{end}"'
+
+bitbucket:
+  workspace: mid-kelola-indonesia
+  # Repos scanned for Copilot PR-title markers ([FULL_COPILOT] / [PARTIAL_COPILOT]).
+  copilot_repos:
+    - talenta-core
+    - talenta-lms-be
+    - talenta-lms-fe
+    - talenta-data-api
+    - form-service
+    - disbursement-service
+    - ledger-service
+    - notification-service
+    - talenta-backyard
+    - talenta-backyard-api
+    - talenta-flex-service
+    - tda-proxy
+    - billing-helper
+    - talenta-mfe-forms
+    - talenta-mfe-disbursement
+    - talenta-mfe-ledger
+  mltc:
+    # Services: any pipeline whose selector pattern contains "prod" counts as a production deploy.
+    service_repos:
+      - talenta-data-api
+      - form-service
+      - disbursement-service
+      - ledger-service
+      - notification-service
+      - talenta-backyard
+      - talenta-backyard-api
+      - talenta-flex-service
+      - tda-proxy
+      - billing-helper
+      - talenta-lms-be
+      - talenta-mfe-forms
+      - talenta-mfe-disbursement
+      - talenta-mfe-ledger
+      - talenta-lms-fe
+    service_pipeline_pattern: 'prod'
+    # Monolith: releases go out via tag PRs (v1.2.3), so deploys are matched on these pipelines.
+    monolith_repos:
+      - talenta-core
+    monolith_pipeline_pattern: '(canaryDeployFullRolloutProduction)|(syncProduction)|(canaryDeployProductionApplyImageOnly)'
