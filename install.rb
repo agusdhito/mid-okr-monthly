@@ -290,17 +290,6 @@ def run_doctor(cfg)
     end
   end
 
-  # 5. Jira filter read — used by install itself to resolve the oncall board.
-  # Same caveat as above: only meaningful once Jira is actually authenticated.
-  if !jira_authed
-    add.call('(setup) filter lookup', false, 'Jira is not authenticated')
-  else
-    code, = req(:jira, "#{jira_b}/rest/api/3/filter/search", filterName: 'a', maxResults: 1)
-    add.call('(setup) filter lookup', code == 200,
-             code == 200 ? '/rest/api/3/filter/search readable'
-                         : "HTTP #{code} — install cannot list saved filters for you to pick from")
-  end
-
   puts
   results.each do |stream, pass, detail|
     pass ? ok("#{stream.ljust(20)} #{dim(detail)}") : bad("#{stream.ljust(20)} #{detail}")
@@ -450,7 +439,7 @@ def run_interview
          old_dig('jira', 'oncall', 'project') || ''
   proj = ask('Oncall project key', proj)
 
-  filter_id = resolve_filter(jira_b, board_id, proj)
+  filter_id = resolve_filter(jira_b, board_id)
 
   heading 'Step 7 — Evidence JQL'
   note 'Project keys differ per org; these feed evidence.rb only.'
@@ -466,10 +455,12 @@ def run_interview
 end
 
 # The board -> filter link is only exposed by the agile API. When that is out of
-# scope we fall back to listing saved filters WITH their JQL for a human to
-# confirm — never name-matching, because near-identical names are the norm
-# ("Filter for TD Oncall" vs "Filter for TD Oncall & FT").
-def resolve_filter(jira_b, board_id, proj)
+# scope we reuse whatever filter_id is already in okr-config.yml (a repair re-run)
+# or ask the engineer to paste it straight off the board's saved filter. We
+# deliberately do NOT name-search Jira's filter catalogue: near-identical names
+# ("Filter for TD Oncall" vs "Filter for TD Oncall & FT") make an auto-pick
+# unsafe, and the interactive JQL-confirmation dance confused more than it helped.
+def resolve_filter(jira_b, board_id)
   if board_id.to_s != ''
     code, body = req(:jira, "#{jira_b}/rest/agile/1.0/board/#{board_id}/configuration")
     if code == 200 && body && body.dig('filter', 'id')
@@ -477,24 +468,13 @@ def resolve_filter(jira_b, board_id, proj)
       ok "board #{board_id} -> filter #{fid} (resolved authoritatively via the agile API)"
       return fid.to_i
     end
-    note "agile API unavailable (HTTP #{code}) — falling back to filter search"
+    note "agile API unavailable (HTTP #{code}) — falling back to the configured filter id"
   end
-  term = ask('Search saved filters for', proj.to_s.empty? ? 'oncall' : "#{proj} oncall")
-  code, body = req(:jira, "#{jira_b}/rest/api/3/filter/search",
-                   filterName: term, expand: 'jql', maxResults: 25)
-  vals = (code == 200 && body) ? (body['values'] || []) : []
-  if vals.empty?
-    warn_ "no filters matched #{term.inspect} (HTTP #{code})"
-    return ask('Filter id for the oncall board', '').to_s
-  end
-  puts
-  note 'Confirm by JQL, not by name — names are often near-identical:'
-  choices = vals.map do |f|
-    jql = f['jql'].to_s
-    jql = jql[0, 150] + '…' if jql.length > 150
-    [f['id'].to_i, "#{bold(f['id'].to_s)}  #{f['name']}\n         #{dim(jql)}"]
-  end
-  ask_pick('Which filter backs that board', choices, nil).to_i
+  note 'Find it on the board (Board settings -> General) or in the filter URL ' \
+       '(.../issues/?filter=12345). It scopes the oncall KR to match the board.'
+  existing = old_dig('jira', 'oncall', 'filter_id').to_s
+  answer = ask('Filter id for the oncall board', existing)
+  answer.to_s.strip.empty? ? '' : answer.to_i
 end
 
 # =============================================================================
