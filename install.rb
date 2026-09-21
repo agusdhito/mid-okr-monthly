@@ -178,12 +178,15 @@ def flatten_cfg(obj, prefix = '', out = {})
 end
 
 # --- known-good level targets (from the OKR templates; not guessable) --------
-# L2 is deliberately absent: its template has not been read, and inventing its
-# numbers would silently produce a wrong KR. Add a block only from the template.
+# Each block is read straight from its own [L#][TEMPLATE] OKR sheet — never
+# copied between levels, since the targets genuinely differ (see L2 below).
 LEVEL_DEFAULTS = {
   'L1' => { 'review_time_target_days' => 2, 'review_stop_events' => %w[approve reject],
             'efficiency_review_events' => %w[approve reject comment],
             'efficiency_target' => 2.25, 'copilot_target_pct' => 50, 'mltc_target_days' => 5 },
+  'L2' => { 'review_time_target_days' => 2, 'review_stop_events' => %w[approve reject],
+            'efficiency_review_events' => %w[approve reject comment],
+            'efficiency_target' => 3, 'copilot_target_pct' => 50, 'mltc_target_days' => 4 },
   'L3' => { 'review_time_target_days' => 1.5, 'review_stop_events' => %w[approve reject comment],
             'efficiency_review_events' => %w[approve reject comment],
             'efficiency_target' => 3.5, 'copilot_target_pct' => 50, 'mltc_target_days' => 4 }
@@ -533,8 +536,8 @@ def render_config(a)
     # Re-run `ruby install.rb --doctor` any time to check what those tokens can read.
 
     # Per-level OKR targets. The templates differ in both weightage and wording, so
-    # nothing here is shared or inferred between levels. L2 is deliberately absent —
-    # add a block from its own template rather than reusing L1/L3 numbers.
+    # nothing here is shared or inferred between levels — each block comes straight
+    # from its own [L#][TEMPLATE] OKR sheet, never copied from another level.
     # Your level: #{a['level']} (efficiency target #{lvl['efficiency_target']})
     levels:
     #{level_blocks}

@@ -57,7 +57,7 @@ source ~/.zshrc
 ruby ~/scripts/okr-monthly/install.rb
 ```
 
-Asks for: site URL, OKR level (L1/L3), Bitbucket workspace, repo list, MLTC repo
+Asks for: site URL, OKR level (L1/L2/L3), Bitbucket workspace, repo list, MLTC repo
 split, oncall board URL, bug project key. Auto-detects `cloud_id`, validates
 every repo slug, and resolves the oncall board's saved filter. Backs up any
 existing config to `okr-config.yml.bak`.

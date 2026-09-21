@@ -1,12 +1,15 @@
 # okr-monthly configuration
 # Credentials are NOT stored here — export ATLASSIAN_EMAIL and ATLASSIAN_API_TOKEN instead.
 
-# Per-level OKR targets. The L1 and L3 templates differ in both weightage and
+# Per-level OKR targets. The L1, L2 and L3 templates differ in both weightage and
 # wording, so nothing here is shared or inferred.
 #   L1: [L1][TEMPLATE][Talenta Integration] OKR 2026 Engineering
+#   L2: [L2][TEMPLATE][Talenta Integration] OKR 2026 Engineering
 #   L3: [L3][TEMPLATE][Talenta Integration] OKR 2026 Engineering
-# L2 is deliberately absent — its template has not been read; add a block
-# rather than reusing L1/L3 numbers.
+# Only the KRs this repo's collectors actually source are kept per level
+# (copilot / review time / efficiency / MLTC); the template's manual KRs
+# (PagerDuty, code coverage, doc coverage, staging bugs, PIC/CFR/RFC, AI-in-SDLC)
+# are out of scope and deliberately not encoded here.
 levels:
   L1:
     review_time_target_days: 2       # row 11: "Total Time to review on Bitbucket PR <= 2 days"
@@ -18,6 +21,18 @@ levels:
     efficiency_target: 2.25          # row 12: "Total efficiency score per week >= 2.25"
     copilot_target_pct: 50           # row 10: "50% PR Full + Partial"
     mltc_target_days: 5              # row 18: "<= 5 days"
+  # L2 read from [L2][TEMPLATE][Talenta Integration] OKR 2026 Engineering.
+  # L2 targets are their own mix — not a copy of L1 or L3: review clock matches
+  # L1 (2 days, approve/reject), efficiency sits between L1 and L3 (3.0), and
+  # MLTC matches L3 (4 days). Weightages differ from L1 too (copilot 10%,
+  # review 5%, efficiency 10%, MLTC 8%) but weightage isn't part of this schema.
+  L2:
+    review_time_target_days: 2       # "Total Time to review on Bitbucket PR <= 2 days"
+    review_stop_events: [approve, reject]   # initiative: "to approve/reject PR"
+    efficiency_review_events: [approve, reject, comment]
+    efficiency_target: 3             # "Total efficiency score per week >= 3" (divider 5)
+    copilot_target_pct: 50           # "50% PR Full + Partial"
+    mltc_target_days: 4              # "Median lead time for change <= 4 days"
   L3:
     review_time_target_days: 1.5     # L3 row: "<= 1.5 days"
     review_stop_events: [approve, reject, comment]  # L3 initiative adds "/comment"
