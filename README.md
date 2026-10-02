@@ -60,7 +60,7 @@ only in the environment — never in `okr-config.yml`, never committed.
 ruby ~/scripts/okr-monthly/install.rb
 ```
 
-Asks for: site URL, OKR level (L1/L3), Bitbucket workspace, repo list, MLTC repo
+Asks for: site URL, OKR level (L1/L2/L3), Bitbucket workspace, repo list, MLTC repo
 split, oncall board URL, bug project key. Auto-detects `cloud_id`, validates every
 repo slug, resolves the oncall board's saved filter, and backs up any existing
 config to `okr-config.yml.bak`.
@@ -103,7 +103,7 @@ ruby okr_mltc.rb  2026-06 --all     # CSV rows for every author (shared sheet)
 ruby evidence.rb  2026-06
 ```
 
-Common flags: `--repos=a,b` (all four collectors) · `--level=L1|L3` and `--json`
+Common flags: `--repos=a,b` (all four collectors) · `--level=L1|L2|L3` and `--json`
 (efficiency, review_time) · `--all` (efficiency, review_time, okr_mltc).
 
 ## Metric definitions

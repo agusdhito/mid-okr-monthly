@@ -18,10 +18,12 @@ Confirm the resolved period back to the user in your first message.
 
 ## Step 1b — Resolve the level
 
-L1 and L3 have different targets and different scoring rules (L1 stops the review
-clock at approve/reject; L3 also counts a comment). Pass `--level=L1|L3`; L1 is the
-default. **L2 is not in `~/scripts/okr-monthly/okr-config.yml`** — its template was never read, so the scripts
-abort rather than borrow another level's numbers. Ask the user which level they are on.
+L1, L2 and L3 have different targets and different scoring rules (L1 and L2 stop the
+review clock at approve/reject; L3 also counts a comment). Pass `--level=L1|L2|L3`;
+L1 is the default. L2 (efficiency target 3, review ≤ 2 days, MLTC ≤ 4 days) was read
+from its own template and is now in `~/scripts/okr-monthly/okr-config.yml`. Any level
+still absent from the config makes the scripts abort rather than borrow another
+level's numbers. Ask the user which level they are on.
 
 ## Step 2 — Check credentials
 
